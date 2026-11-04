@@ -35,7 +35,7 @@ binding = "VYBER_TELEMETRY"
 id = "1dc803e54d25443989152d6193254ed5"
 
 # Secrets (wrangler secret put <NAME>):
-#   GITHUB_PAT        fine-grained PAT, Master00Sniper/Vapor + Vyber, issues RW,
-#                     contents R (~/gm_credentials.txt, "vapor-vyber-proxy Token")
+#   GITHUB_PAT        fine-grained PAT owned by gregmortonapps (since 2026-11-04), Vapor + Vyber, issues RW,
+#                     contents R (~/gm_credentials.txt, "vapor-vyber-proxy Token (gregmortonapps)")
 #   VYBER_AUTH_KEY    write key, public by design (hardcoded in the app)
 #   VYBER_STATS_KEY   read-only key for /stats (in web/stats.html)

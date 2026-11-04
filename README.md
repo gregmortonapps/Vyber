@@ -52,7 +52,7 @@ A soundboard for Windows that plays audio through your speakers **and** your vir
 
 ## Getting Started
 
-1. **Download** the latest `.exe` from [Releases](https://github.com/Master00Sniper/Vyber/releases) — or run from source with `python run.py`
+1. **Download** the latest `.exe` from [Releases](https://github.com/gregmortonapps/Vyber/releases) — or run from source with `python run.py`
 2. **Install VB-CABLE** when prompted (or install it manually from [vb-audio.com](https://vb-audio.com/Cable/) and reboot)
 3. **Set your voice chat input device** to `CABLE Output (VB-Audio Virtual Cable)` (see the in-app Discord guide for detailed steps)
 4. **Add sounds** — click the `+ Add Sound` button or right-click to add a folder
@@ -90,6 +90,6 @@ To build a standalone `.exe` with Nuitka:
 
 ## Support
 
-- [Report a Bug](https://github.com/Master00Sniper/Vyber/issues)
+- [Report a Bug](https://github.com/gregmortonapps/Vyber/issues)
 - [Support on Ko-fi](https://ko-fi.com/master00sniper)
 - Follow on [X/Twitter](https://x.com/master00sniper)

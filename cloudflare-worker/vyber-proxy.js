@@ -5,7 +5,7 @@ addEventListener('fetch', event => {
 // Known routes — reject everything else early
 const KNOWN_ROUTES = ['/download/latest', '/telemetry', '/stats'];
 // Repos the GitHub proxy may reach, lowercase (GitHub paths are case-insensitive).
-// The repo moves from Master00Sniper to the gregmortonapps org (2026-10).
+// The repo moved from Master00Sniper to the gregmortonapps account (2026-11-04).
 // Installed apps keep calling the OLD owner path, and after the move GitHub's
 // release JSON hands out NEW-owner URLs, so both owners are allowed, before
 // and after the move.
@@ -84,7 +84,7 @@ async function handleRequest(request) {
 
     try {
       const releaseResponse = await fetch(
-        'https://api.github.com/repos/Master00Sniper/Vyber/releases/latest',
+        'https://api.github.com/repos/gregmortonapps/Vyber/releases/latest',
         {
           headers: {
             'Authorization': `token ${GITHUB_PAT}`,

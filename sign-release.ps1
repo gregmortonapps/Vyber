@@ -9,7 +9,7 @@ param(
     [string]$App
 )
 
-$repo = "Master00Sniper/$App"
+$repo = "gregmortonapps/$App"
 $exe = "$App.exe"
 $tempDir = "$env:TEMP\sign-release"
 

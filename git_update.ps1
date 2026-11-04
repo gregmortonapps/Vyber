@@ -72,7 +72,7 @@ Write-Host "Tag v$VERSION pushed successfully!" -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "GitHub Actions is now building Vyber.exe..." -ForegroundColor Yellow
-Write-Host "Check progress at: https://github.com/Master00Sniper/Vyber/actions" -ForegroundColor Yellow
+Write-Host "Check progress at: https://github.com/gregmortonapps/Vyber/actions" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "Once complete, the release will be created automatically with:"
 Write-Host "  - Title: Vyber v$VERSION"
