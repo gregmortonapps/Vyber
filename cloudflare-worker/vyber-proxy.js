@@ -26,6 +26,27 @@ const TELEMETRY_RATE_WINDOW = 3600; // 1 hour in seconds
 // Cache TTL for /download/latest (avoids burning GitHub API calls)
 const DOWNLOAD_CACHE_TTL = 600; // 10 minutes
 
+// Repo pass-through allowlist (security review 17q, 2026-11-17). The write key ships
+// inside the public desktop app, so anyone can read it; it cannot be what limits
+// GitHub access. The proxy now forwards ONLY the three calls shipped apps make
+// (checked against every version in git history): the updater's GET of
+// releases/latest, its GET of one release asset (download), and the bug report's
+// POST of a new issue. Every other method or path under the repo (editing,
+// closing or labelling issues, comments, deletes, other reads) is refused, so the
+// PAT can't be used to vandalise the issue tracker or burn its rate limit.
+const REPO_PATH_RE = /^\/repos\/(master00sniper|gregmortonapps)\/vyber\/(releases\/latest|releases\/assets\/\d+|issues)$/i;
+const ISSUE_RATE_LIMIT = 5;        // new bug reports per IP per window
+const ISSUE_RATE_WINDOW = 3600;    // 1 hour in seconds
+const ISSUE_MAX_BYTES = 65536;     // a bug report body is a few KB
+
+function matchRepoRoute(method, pathname) {
+  const m = REPO_PATH_RE.exec(pathname);
+  if (!m) return null;
+  const tail = m[2].toLowerCase();
+  if (tail === 'issues') return method === 'POST' ? 'issue' : null;
+  return (method === 'GET' || method === 'HEAD') ? 'read' : null;
+}
+
 async function handleRequest(request) {
   const url = new URL(request.url);
 
@@ -262,7 +283,34 @@ async function handleRequest(request) {
   // =========================================
   // GitHub API Proxy — restricted to Vyber repo
   // =========================================
-  const githubUrl = `https://api.github.com${url.pathname}${url.search}`;
+  // Only the allowlisted calls go on to GitHub (see matchRepoRoute).
+  const repoRoute = matchRepoRoute(request.method, url.pathname);
+  if (!repoRoute) {
+    return new Response('Not Found', { status: 404 });
+  }
+  if (repoRoute === 'issue') {
+    const len = parseInt(request.headers.get('Content-Length') || '0', 10);
+    if (len > ISSUE_MAX_BYTES) {
+      return new Response('Payload Too Large', { status: 413 });
+    }
+    const iIP = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const iKey = `ratelimit:issue:${iIP}`;
+    try {
+      const iHits = parseInt(await VYBER_TELEMETRY.get(iKey) || '0');
+      if (iHits >= ISSUE_RATE_LIMIT) {
+        return new Response('Too Many Requests', { status: 429, headers: { 'Retry-After': '3600' } });
+      }
+      await VYBER_TELEMETRY.put(iKey, (iHits + 1).toString(), { expirationTtl: ISSUE_RATE_WINDOW });
+    } catch (e) {
+      // KV trouble must not block a real bug report: fail open.
+    }
+  }
+
+  // Always forward to the repo's current owner. Old installs still call the old
+  // master00sniper path; if that name were ever renamed or taken over, a
+  // look-alike repo there must never be able to serve the updater an exe.
+  const forwardPath = url.pathname.replace(/^\/repos\/master00sniper\//i, '/repos/gregmortonapps/');
+  const githubUrl = `https://api.github.com${forwardPath}${url.search}`;
 
   // Build headers for GitHub request
   const githubHeaders = new Headers();
@@ -292,6 +340,21 @@ async function handleRequest(request) {
     // Forward request body for POST/PUT/PATCH
     if (isWrite) {
       fetchOptions.body = await request.text();
+      if (fetchOptions.body.length > ISSUE_MAX_BYTES) {
+        return new Response('Payload Too Large', { status: 413 });
+      }
+      // Only a title and a body reach GitHub: labels, assignees, milestones and
+      // anything else a caller adds are dropped (they'd be set as our account).
+      let report;
+      try { report = JSON.parse(fetchOptions.body); } catch (e) { report = null; }
+      if (!report || typeof report.title !== 'string' || typeof report.body !== 'string' || !report.title.trim()) {
+        return new Response('Bad Request', { status: 400 });
+      }
+      const cleanTitle = report.title.slice(0, 200);
+      fetchOptions.body = JSON.stringify({
+        title: /^\[Bug Report\]/.test(cleanTitle) ? cleanTitle : '[Bug Report] ' + cleanTitle,
+        body: report.body,
+      });
     }
 
     let response = await fetch(githubUrl, fetchOptions);
