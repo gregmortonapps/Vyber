@@ -16,6 +16,15 @@ const PAGES_ASSET_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
 };
+
+// Security review 17q5 (2026-11-18): on HTML responses only. No script or style
+// limits on purpose; this stops other sites framing the pages, <base> hijacks,
+// plugins, and forms posting anywhere but this site and Morton Forms.
+const HTML_SECURITY_HEADERS = {
+  'Content-Security-Policy': "base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self' https://forms.mortonapps.com",
+  'X-Frame-Options': 'DENY',
+  'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
+};
 const PAGES_CONTENT_TYPES = {
   'text/html': 'text/html; charset=utf-8',
   'text/css': 'text/css; charset=utf-8',
@@ -41,6 +50,7 @@ export default {
     if (status === 404) headers.set('Cache-Control', 'no-store');
     const ct = (headers.get('Content-Type') || '').toLowerCase();
     if (PAGES_CONTENT_TYPES[ct]) headers.set('Content-Type', PAGES_CONTENT_TYPES[ct]);
+    if (ct.startsWith('text/html')) for (const [k, v] of Object.entries(HTML_SECURITY_HEADERS)) if (!headers.has(k)) headers.set(k, v);
     for (const [k, v] of Object.entries(PAGES_ASSET_HEADERS)) if (!headers.has(k)) headers.set(k, v);
     return new Response(res.body, { status, statusText: res.statusText, headers });
   },
