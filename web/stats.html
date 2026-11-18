@@ -453,7 +453,7 @@
             html += `
                 <div class="details-section">
                     <h2>Raw Data</h2>
-                    <pre style="background: var(--bg-primary); padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.85rem; color: var(--text-secondary);">${JSON.stringify(data, null, 2)}</pre>
+                    <pre style="background: var(--bg-primary); padding: 1rem; border-radius: 4px; overflow-x: auto; font-size: 0.85rem; color: var(--text-secondary);">${esc(JSON.stringify(data, null, 2))}</pre>
                 </div>
             `;
 
@@ -467,15 +467,22 @@
                 <div class="error">
                     <div class="error-icon">&#9888;&#65039;</div>
                     <h2>Failed to load stats</h2>
-                    <p>${message}</p>
+                    <p>${esc(message)}</p>
                     <br>
                     <button class="refresh-btn" onclick="fetchStats()">Try Again</button>
                 </div>
             `;
         }
 
+        // Everything from the stats API is written as text, never markup: the
+        // numbers can be forged with the apps' public write key (security review
+        // 17q8, 2026-11-18). Today /stats returns only numbers and a date.
+        function esc(v) {
+            return String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+        }
+
         function formatLabel(key) {
-            return key
+            return esc(key)
                 .replace(/_/g, ' ')
                 .replace(/([A-Z])/g, ' $1')
                 .split(' ')
@@ -487,7 +494,7 @@
             if (typeof value === 'number') {
                 return value.toLocaleString();
             }
-            return value;
+            return esc(typeof value === 'object' && value !== null ? JSON.stringify(value) : value);
         }
 
         fetchStats();
