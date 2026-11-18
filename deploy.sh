@@ -49,6 +49,17 @@ for (const f of walk(root)) {
 console.log('stamped ' + n + ' html file(s) with ?v=' + V);
 NODE
 
+# Credential check (2026-11-18): nothing that looks like a live token or private
+# key ships. GitHub, AWS, Square, Stripe, Slack and Telegram token shapes plus
+# PEM private keys. Prints file names only, never the match. Public-by-design
+# keys (IndexNow, Web3Forms, the stats keys) don't match these shapes.
+SECRET_RE='github_pat_[A-Za-z0-9_]{60,}|gh[pousr]_[A-Za-z0-9]{36,}|AKIA[0-9A-Z]{16}|EAAA[A-Za-z0-9_-]{40,}|sk_live_[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|[0-9]{8,10}:AA[A-Za-z0-9_-]{33}'
+LEAKS=$(grep -rIlE "$SECRET_RE" "$ROOT" || true)
+if [ -n "$LEAKS" ]; then
+  echo "✗ Deploy stopped: these files look like they hold a credential (token or private key). Everything in $ROOT/ is uploaded, tracked or not." >&2
+  echo "$LEAKS" >&2
+  exit 1
+fi
 git add -A -- "$ROOT"   # stage only the deployed site (MCC sibling fix 2026-10-06; never a bare add-all)
 OTHER=$(git status --porcelain | grep -v "^.. $ROOT/" || true)
 [ -n "$OTHER" ] && { echo "Not committed (outside $ROOT/, review by hand):"; echo "$OTHER"; }
